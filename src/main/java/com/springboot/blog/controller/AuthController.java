@@ -3,10 +3,12 @@ package com.springboot.blog.controller;
 
 import com.springboot.blog.model.Role;
 import com.springboot.blog.model.User;
+import com.springboot.blog.payload.dto.JWTAuthResponse;
 import com.springboot.blog.payload.dto.LoginDto;
 import com.springboot.blog.payload.dto.SignUpDto;
 import com.springboot.blog.repository.RoleRepository;
 import com.springboot.blog.repository.UserRepository;
+import com.springboot.blog.security.JWTTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,13 +40,19 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JWTTokenProvider jwtTokenProvider;
 
     @PostMapping("/signin")
-    public ResponseEntity<String> authenticateUser(@RequestBody LoginDto loginDto){
+    public ResponseEntity<JWTAuthResponse> authenticateUser(@RequestBody LoginDto loginDto){
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 loginDto.getUsernameOrEmail(),loginDto.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return new ResponseEntity<>("User signed in successfully", HttpStatus.OK);
+
+        //get token from tokenProvider class
+        String token = jwtTokenProvider.generateToken(authentication);
+
+        return ResponseEntity.ok(new JWTAuthResponse(token));
     }
 
 
@@ -57,7 +65,7 @@ public class AuthController {
         }
 
         //check if email exist in db
-        else if(userRepository.existsByEmail(signUpDto.getEmail())){
+        if(userRepository.existsByEmail(signUpDto.getEmail())){
             return new ResponseEntity<>("Email has already taken",HttpStatus.BAD_REQUEST);
         }
 

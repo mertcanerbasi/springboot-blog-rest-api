@@ -14,10 +14,9 @@ public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+
+    @Column(length = 60)
     private String name;
-    private String username;
-    private String email;
-    private String password;
 
 
 

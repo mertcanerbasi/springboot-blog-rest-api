@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtTokenProvider {
@@ -21,21 +23,42 @@ public class JwtTokenProvider {
     @Value("${app-jwt-expiration-milliseconds}")
     private long jwtExpirationDate;
 
+    @Value("${app.jwt-refresh-expiration-milliseconds}")
+    private long jwtRefreshExpirationDate;
+
     // generate JWT token
     public String generateToken(Authentication authentication){
-        String username = authentication.getName();
+
 
         Date currentDate = new Date();
 
         Date expireDate = new Date(currentDate.getTime() + jwtExpirationDate);
 
-        String token = Jwts.builder()
-                .setSubject(username)
+        return Jwts.builder()
+                .setSubject(authentication.getName())
                 .setIssuedAt(new Date())
                 .setExpiration(expireDate)
                 .signWith(key())
                 .compact();
-        return token;
+    }
+
+    // Generate a refresh token
+    public String generateRefreshToken(Authentication authentication) {
+        Map<String, Object> claims = new HashMap<>();
+        Date currentDate = new Date();
+        Date expireDate = new Date(currentDate.getTime() + jwtRefreshExpirationDate);
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(authentication.getName())
+                .setIssuedAt(new Date())
+                .setExpiration(expireDate)
+                .signWith(key())
+                .compact();
+    }
+
+    // Validate and extract claims from a token
+    public Claims extractClaims(String token) {
+        return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
     }
 
     private Key key(){
